@@ -46,10 +46,19 @@ input:focus{outline-color:var(--ok)}
 #share{display:none;gap:10px;margin-top:18px;justify-content:center}
 #share button{width:auto;min-height:48px;padding:0 20px;font-size:15px;margin:0;background:var(--card2);color:var(--txt)}
 #banner{position:absolute;left:12px;top:calc(12px + env(safe-area-inset-top));background:#f59e0b;color:#1a1100;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;z-index:3;display:none}
-#bar{display:flex;gap:14px;justify-content:center;padding:14px 12px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#05080fcc);z-index:3}
-#bar button{width:60px;min-height:60px;height:60px;border-radius:50%;margin:0;font-size:24px;padding:0;background:#ffffff22;color:#fff}
+#bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:14px 12px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#05080fcc);z-index:3}
+#bar button{width:50px;min-height:50px;height:50px;border-radius:50%;margin:0;font-size:24px;padding:0;background:#ffffff22;color:#fff}
 #bar button.off{background:#fff;color:#000}
 #bar button.end{background:var(--bad);color:#fff}
+#mini{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:50;display:none;align-items:center;gap:6px;background:#162036f2;border:1px solid #ffffff22;border-radius:999px;padding:5px 6px 5px 14px;box-shadow:0 6px 24px #0008;touch-action:none;user-select:none;font-variant-numeric:tabular-nums}
+#mini .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+#mini.warn .dot{background:#f59e0b}
+#mini span{font-size:14px;font-weight:700;min-width:42px}
+#mini button{width:40px;min-height:40px;height:40px;border-radius:50%;margin:0;padding:0;font-size:17px;background:#ffffff1f;color:#fff}
+#mini button.off{background:#fff;color:#000}
+#mini button.end{background:var(--bad)}
+body.bg{align-items:flex-end;justify-content:flex-end}
+#bar #bg{background:#ffffff22}
 </style>
 </head>
 <body>
@@ -86,15 +95,22 @@ input:focus{outline-color:var(--ok)}
     <button id="bc" title="Ligar câmera" aria-label="Câmera">📷</button>
     <button id="bs" title="Alto-falante" aria-label="Alto-falante">🔊</button>
     <button id="bf" title="Trocar câmera" aria-label="Trocar câmera" style="display:none">🔄</button>
+    <button id="bg" title="Segundo plano" aria-label="Segundo plano">⬇</button>
     <button id="be" class="end" title="Encerrar" aria-label="Encerrar">✕</button>
   </div>
+</div>
+<div id="mini" role="group" aria-label="Chamada em segundo plano">
+  <i class="dot"></i><span id="mt">00:00</span>
+  <button id="mm" aria-label="Microfone">🎤</button>
+  <button id="mx" aria-label="Abrir chamada">⬆</button>
+  <button id="me" class="end" aria-label="Encerrar">✕</button>
 </div>
 <audio id="aud" autoplay playsinline></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>
 (function(){
-var $=function(i){return document.getElementById(i)};
+var $=function(i){return document.getElementById(i)||(S.pip&&S.pip.document.getElementById(i))||document.createElement('i')};
 var PREFIX='vcall-x7-';
 var ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}],sdpSemantics:'unified-plan'}};
 var S={peer:null,call:null,data:null,stream:null,code:'',host:false,video:false,facing:'user',wake:null,keep:null,t0:0,timer:0,ending:false,retry:0,peerHidden:false,wantVideo:false,connected:false};
@@ -191,8 +207,8 @@ function ligar(c){
     var pc=c.peerConnection;
     pc.oniceconnectionstatechange=function(){
       var s=pc.iceConnectionState;
-      if(s==='disconnected'||s==='failed'){ $('banner').style.display='block'; if(s==='failed')reconectar(); else setTimeout(function(){if(pc.iceConnectionState==='disconnected')reconectar()},4000) }
-      else if(s==='connected'||s==='completed'){ $('banner').style.display='none' }
+      if(s==='disconnected'||s==='failed'){ $('banner').style.display='block';$('mini').classList.add('warn'); if(s==='failed')reconectar(); else setTimeout(function(){if(pc.iceConnectionState==='disconnected')reconectar()},4000) }
+      else if(s==='connected'||s==='completed'){ $('banner').style.display='none';$('mini').classList.remove('warn') }
     };
   });
   c.on('close',function(){ if(!S.ending)reconectar() });
@@ -211,7 +227,7 @@ function killPeer(){
   S.call=S.peer=S.data=null;
 }
 function fim(){
-  S.ending=true;killPeer();
+  S.ending=true;if(S.bg){S.bg=false;document.body.classList.remove('bg');if(S.pip){try{S.pip.close()}catch(e){}S.pip=null}$('mini').style.display='none'}killPeer();
   if(S.stream){S.stream.getTracks().forEach(function(t){t.stop()});S.stream=null}
   stopKeep();try{S.wake&&S.wake.release()}catch(e){} S.wake=null;
   clearInterval(S.timer);S.timer=0;S.t0=0;$('tm').textContent='';
@@ -221,7 +237,7 @@ function fim(){
 }
 function tick(){
   var s=Math.floor((Date.now()-S.t0)/1000),m=Math.floor(s/60);
-  $('tm').textContent=(m<10?'0':'')+m+':'+(s%60<10?'0':'')+s%60;
+  var t=(m<10?'0':'')+m+':'+(s%60<10?'0':'')+s%60;$('tm').textContent=t;$('mt').textContent=t;
 }
 
 /* ---------- canal de dados (avisos entre os dois) ---------- */
@@ -278,6 +294,7 @@ document.addEventListener('visibilitychange',function(){
     send({t:'hid'});
     ressuscitar();
   }else{
+    if(S.bg){ressuscitar();return}
     if(vt&&!S.camOff)vt.enabled=true;
     var rv2=$('remote');var rt2=rv2.srcObject&&rv2.srcObject.getVideoTracks()[0]; if(rt2)rt2.enabled=true; rv2.play().catch(function(){});
     send({t:'vis'});ressuscitar();lock();
@@ -287,6 +304,45 @@ document.addEventListener('visibilitychange',function(){
 window.addEventListener('pagehide',function(e){ if(e.persisted)return; });
 setInterval(function(){ if(S.stream&&!S.ending&&document.hidden)ressuscitar() },5000);
 window.addEventListener('online',function(){ if(S.stream&&!S.ending){S.retry=0;reconectar()} });
+
+
+/* ---------- modo segundo plano (mini, ultra leve) ---------- */
+function goBg(){
+  if(!S.stream||S.bg)return;
+  S.bg=true;document.body.classList.add('bg');
+  $('call').style.display='none';$('mini').style.display='flex';
+  var vt=S.stream.getVideoTracks()[0];if(vt)vt.enabled=false;       // não envia vídeo
+  var rv=$('remote'),rt=rv.srcObject&&rv.srcObject.getVideoTracks()[0];if(rt)rt.enabled=false;try{rv.pause()}catch(e){}
+  try{S.wake&&S.wake.release()}catch(e){}S.wake=null;
+  send({t:'hid'});ressuscitar();
+  // janela flutuante sempre visível (Chrome/Edge desktop)
+  if(window.documentPictureInPicture){
+    documentPictureInPicture.requestWindow({width:230,height:64}).then(function(w){
+      S.pip=w;var d=w.document;d.body.style.cssText='margin:0;background:#0b1220;display:grid;place-items:center;height:100vh';
+      var st=d.createElement('style');st.textContent=document.querySelector('style').textContent;d.head.appendChild(st);
+      var m=$('mini');m.style.position='static';m.style.display='flex';d.body.appendChild(m);
+      w.addEventListener('pagehide',function(){if(S.pip!==w)return;S.pip=null;var mm=$('mini');mm.style.position='';document.body.appendChild(mm);if(S.bg)mm.style.display='flex'});
+    }).catch(function(){});
+  }
+}
+function outBg(){
+  if(!S.bg)return;S.bg=false;document.body.classList.remove('bg');
+  if(S.pip){var pw=S.pip;S.pip=null;try{pw.close()}catch(e){}}
+  var m=document.getElementById('mini')||pw&&pw.document.getElementById('mini');m.style.display='none';m.style.position='';document.body.appendChild(m);
+  $('call').style.display='flex';
+  var vt=S.stream&&S.stream.getVideoTracks()[0];if(vt&&!S.camOff)vt.enabled=true;
+  var rv=$('remote'),rt=rv.srcObject&&rv.srcObject.getVideoTracks()[0];if(rt)rt.enabled=true;rv.play().catch(function(){});
+  send({t:'vis'});lock();
+}
+$('bg').onclick=goBg;$('mx').onclick=outBg;
+$('mm').onclick=function(){toggleMic();$('mm').classList.toggle('off',!S.stream.getAudioTracks()[0].enabled);$('mm').textContent=$('bm').textContent};
+$('me').onclick=function(){outBg();fim()};
+(function(){ // arrastar a bolinha
+  var m=$('mini'),dx,dy,on=0;
+  m.addEventListener('pointerdown',function(e){if(e.target.tagName==='BUTTON')return;on=1;var r=m.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;m.setPointerCapture(e.pointerId)});
+  m.addEventListener('pointermove',function(e){if(!on)return;m.style.right='auto';m.style.bottom='auto';m.style.left=Math.max(0,Math.min(innerWidth-m.offsetWidth,e.clientX-dx))+'px';m.style.top=Math.max(0,Math.min(innerHeight-m.offsetHeight,e.clientY-dy))+'px'});
+  m.addEventListener('pointerup',function(){on=0});
+})();
 
 /* ---------- botões ---------- */
 function toggleMic(){
