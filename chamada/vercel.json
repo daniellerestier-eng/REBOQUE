@@ -1,0 +1,1 @@
+{"rewrites":[{"source":"/:code(\\d{4})","destination":"/index.html"}]}

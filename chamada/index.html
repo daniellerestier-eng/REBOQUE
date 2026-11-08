@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chamada</title>
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2322c55e'/%3E%3Cpath d='M14 22h26v20H14zM42 29l10-6v18l-10-6z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b1220;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
+.card{width:100%;max-width:360px;text-align:center}
+h1{font-size:28px;margin:0 0 6px}
+p{color:#9fb0c8;margin:0 0 22px;font-size:15px}
+button,input{font:inherit;border-radius:14px;border:0;width:100%;min-height:56px}
+button{background:#22c55e;color:#04210f;font-weight:700;font-size:18px;cursor:pointer;margin-bottom:12px}
+button.sec{background:#1b2740;color:#fff}
+input{background:#1b2740;color:#fff;text-align:center;font-size:28px;letter-spacing:.3em;margin-bottom:12px;padding:0 12px}
+.or{color:#6b7c96;margin:10px 0;font-size:13px}
+#call{position:fixed;inset:0;background:#000;display:none}
+#remote{width:100%;height:100%;object-fit:cover;background:#000}
+#local{position:absolute;right:12px;top:calc(12px + env(safe-area-inset-top));width:28vw;max-width:140px;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:2px solid #fff3;background:#111;transform:scaleX(-1)}
+#info{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top));text-align:center;font-size:15px;text-shadow:0 1px 4px #000;pointer-events:none;padding:0 30vw 0 12px}
+#info b{font-size:22px;letter-spacing:.2em}
+#bar{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;gap:12px;justify-content:center}
+#bar button{width:60px;min-height:60px;height:60px;border-radius:50%;margin:0;font-size:22px;padding:0;background:#ffffff26;color:#fff}
+#bar button.off{background:#fff;color:#000}
+#bar button.end{background:#ef4444;color:#fff}
+.err{color:#fca5a5;min-height:20px;font-size:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="card" id="home">
+  <h1>📹 Chamada</h1>
+  <p>Vídeo e voz direto entre dois aparelhos.</p>
+  <button id="novo">Criar chamada</button>
+  <div class="or">ou digite o código</div>
+  <input id="cod" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+  <button class="sec" id="entrar">Entrar</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div id="call">
+  <video id="remote" autoplay playsinline></video>
+  <video id="local" autoplay playsinline muted></video>
+  <div id="info"></div>
+  <div id="bar">
+    <button id="bm" title="Microfone">🎤</button>
+    <button id="bc" title="Câmera">📷</button>
+    <button id="bf" title="Trocar câmera">🔄</button>
+    <button id="bp" title="Janela flutuante">⧉</button>
+    <button id="be" class="end" title="Encerrar">✕</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var PREFIX='vcall-x7-';
+var peer,call,stream,code,facing='user',wake=null,keep=null;
+var cfg={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}]}};
+
+function err(m){$('err').textContent=m||''}
+function show(inCall){$('home').style.display=inCall?'none':'block';$('call').style.display=inCall?'block':'none'}
+
+async function getMedia(){
+  if(stream)return stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}
+  catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:false,audio:true})}catch(e2){throw new Error('Permita câmera e microfone para continuar.')}}
+  $('local').srcObject=stream;
+  return stream;
+}
+
+function attach(c){
+  call=c;
+  c.on('stream',function(r){
+    var v=$('remote');v.srcObject=r;v.play().catch(function(){});
+    $('info').innerHTML='Conectado'; setupBackground(r);
+  });
+  c.on('close',end);
+  c.on('error',function(){end()});
+}
+
+async function criar(){
+  err('');
+  try{await getMedia()}catch(e){return err(e.message)}
+  code=String(Math.floor(1000+Math.random()*9000));
+  open(code,true);
+}
+async function entrar(){
+  err('');
+  var c=$('cod').value.trim();
+  if(!/^\d{4}$/.test(c))return err('Digite o código de 4 números.');
+  try{await getMedia()}catch(e){return err(e.message)}
+  code=c; open(code,false);
+}
+
+function open(c,host){
+  show(true);
+  $('info').innerHTML='Código<br><b>'+c+'</b><br>Aguardando a outra pessoa…';
+  history.replaceState(null,'','/'+c);
+  startKeepAlive(); lockScreen();
+  if(host){
+    peer=new Peer(PREFIX+c,cfg);
+    peer.on('error',function(e){
+      if(e.type==='unavailable-id'){peer.destroy();code=String(Math.floor(1000+Math.random()*9000));open(code,true)}
+      else $('info').textContent='Erro de conexão. Tente de novo.';
+    });
+    peer.on('call',function(inc){inc.answer(stream);attach(inc)});
+  }else{
+    peer=new Peer(cfg);
+    peer.on('open',function(){
+      $('info').textContent='Chamando '+c+'…';
+      attach(peer.call(PREFIX+c,stream));
+    });
+    peer.on('error',function(e){
+      if(e.type==='peer-unavailable'){end();err('Código não encontrado. Confira e tente de novo.')}
+      else $('info').textContent='Erro de conexão.';
+    });
+  }
+  peer.on('disconnected',function(){try{peer.reconnect()}catch(e){}});
+}
+
+function end(){
+  try{call&&call.close()}catch(e){}
+  try{peer&&peer.destroy()}catch(e){}
+  if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+  stopKeepAlive(); try{wake&&wake.release()}catch(e){}
+  if(document.pictureInPictureElement)document.exitPictureInPicture().catch(function(){});
+  $('remote').srcObject=null; call=peer=null;
+  history.replaceState(null,'','/'); show(false);
+}
+
+/* ---- segundo plano ---- */
+function lockScreen(){
+  if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(w){wake=w}).catch(function(){});
+}
+// tom inaudível mantém o áudio ativo para o navegador não suspender a aba
+function startKeepAlive(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext; var ctx=new AC();
+    var o=ctx.createOscillator(),g=ctx.createGain(); g.gain.value=0.0001;
+    o.connect(g);g.connect(ctx.destination);o.start(); keep={ctx:ctx,o:o};
+  }catch(e){}
+}
+function stopKeepAlive(){try{keep&&keep.o.stop();keep&&keep.ctx.close()}catch(e){} keep=null}
+function setupBackground(r){
+  if('mediaSession' in navigator){
+    navigator.mediaSession.metadata=new MediaMetadata({title:'Chamada em andamento',artist:'Código '+code});
+    try{navigator.mediaSession.setActionHandler('hangup',end)}catch(e){}
+    try{navigator.mediaSession.setActionHandler('togglemicrophone',toggleMic)}catch(e){}
+  }
+}
+document.addEventListener('visibilitychange',function(){
+  if(!call)return;
+  if(document.hidden){
+    // ao sair do site, abre o vídeo flutuante e segue com a voz
+    var v=$('remote');
+    if(document.pictureInPictureEnabled&&!document.pictureInPictureElement&&v.srcObject)v.requestPictureInPicture().catch(function(){});
+    if(keep&&keep.ctx.state==='suspended')keep.ctx.resume();
+  }else{
+    lockScreen();
+    if(keep&&keep.ctx.state==='suspended')keep.ctx.resume();
+    if(document.pictureInPictureElement)document.exitPictureInPicture().catch(function(){});
+    $('remote').play().catch(function(){});
+  }
+});
+if('mediaSession' in navigator){
+  try{navigator.mediaSession.setActionHandler('enterpictureinpicture',function(){$('remote').requestPictureInPicture().catch(function(){})})}catch(e){}
+}
+
+/* ---- botões ---- */
+function toggleMic(){
+  if(!stream)return; var t=stream.getAudioTracks()[0]; if(!t)return;
+  t.enabled=!t.enabled; $('bm').classList.toggle('off',!t.enabled); $('bm').textContent=t.enabled?'🎤':'🔇';
+}
+$('bm').onclick=toggleMic;
+$('bc').onclick=function(){
+  var t=stream&&stream.getVideoTracks()[0]; if(!t)return;
+  t.enabled=!t.enabled; $('bc').classList.toggle('off',!t.enabled);
+};
+$('bf').onclick=async function(){
+  if(!stream)return;
+  facing=facing==='user'?'environment':'user';
+  try{
+    var n=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
+    var nt=n.getVideoTracks()[0], old=stream.getVideoTracks()[0];
+    var s=call&&call.peerConnection.getSenders().find(function(x){return x.track&&x.track.kind==='video'});
+    if(s)await s.replaceTrack(nt);
+    stream.removeTrack(old);old.stop();stream.addTrack(nt);$('local').srcObject=stream;
+    $('local').style.transform=facing==='user'?'scaleX(-1)':'none';
+  }catch(e){}
+};
+$('bp').onclick=function(){
+  var v=$('remote');
+  if(document.pictureInPictureElement)document.exitPictureInPicture();
+  else if(v.requestPictureInPicture)v.requestPictureInPicture().catch(function(){});
+};
+$('be').onclick=end;
+$('novo').onclick=criar;
+$('entrar').onclick=entrar;
+$('cod').addEventListener('keydown',function(e){if(e.key==='Enter')entrar()});
+$('cod').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'')});
+
+// link curto: /1234 já preenche o código
+var m=location.pathname.match(/^\/(\d{4})$/)||location.hash.match(/^#(\d{4})$/);
+if(m){$('cod').value=m[1]}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
+})();
+</script>
+</body>
+</html>
