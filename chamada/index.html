@@ -5,209 +5,348 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Chamada</title>
 <meta name="theme-color" content="#0b1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2322c55e'/%3E%3Cpath d='M14 22h26v20H14zM42 29l10-6v18l-10-6z' fill='%23fff'/%3E%3C/svg%3E">
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#0b1220;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-body{display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom)}
-.card{width:100%;max-width:360px;text-align:center}
-h1{font-size:28px;margin:0 0 6px}
-p{color:#9fb0c8;margin:0 0 22px;font-size:15px}
-button,input{font:inherit;border-radius:14px;border:0;width:100%;min-height:56px}
-button{background:#22c55e;color:#04210f;font-weight:700;font-size:18px;cursor:pointer;margin-bottom:12px}
-button.sec{background:#1b2740;color:#fff}
-input{background:#1b2740;color:#fff;text-align:center;font-size:28px;letter-spacing:.3em;margin-bottom:12px;padding:0 12px}
-.or{color:#6b7c96;margin:10px 0;font-size:13px}
-#call{position:fixed;inset:0;background:#000;display:none}
-#remote{width:100%;height:100%;object-fit:cover;background:#000}
-#local{position:absolute;right:12px;top:calc(12px + env(safe-area-inset-top));width:28vw;max-width:140px;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:2px solid #fff3;background:#111;transform:scaleX(-1)}
-#info{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top));text-align:center;font-size:15px;text-shadow:0 1px 4px #000;pointer-events:none;padding:0 30vw 0 12px}
-#info b{font-size:22px;letter-spacing:.2em}
-#bar{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;gap:12px;justify-content:center}
-#bar button{width:60px;min-height:60px;height:60px;border-radius:50%;margin:0;font-size:22px;padding:0;background:#ffffff26;color:#fff}
+:root{--bg:#0b1220;--card:#162036;--card2:#1e2b47;--txt:#fff;--mut:#8fa3c2;--ok:#22c55e;--bad:#ef4444}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.card{width:100%;max-width:380px;text-align:center}
+.logo{width:72px;height:72px;border-radius:20px;background:var(--ok);display:grid;place-items:center;margin:0 auto 14px;font-size:34px}
+h1{font-size:30px;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 24px;font-size:15px}
+button,input{font:inherit;border:0;border-radius:16px;width:100%;min-height:58px;color:var(--txt)}
+button{background:var(--ok);color:#04210f;font-weight:700;font-size:18px;cursor:pointer;margin-bottom:12px;transition:transform .1s}
+button:active{transform:scale(.97)}
+button.sec{background:var(--card2);color:var(--txt)}
+input{background:var(--card);text-align:center;font-size:30px;letter-spacing:.35em;padding:0 0 0 .35em;margin-bottom:12px;outline:2px solid transparent}
+input:focus{outline-color:var(--ok)}
+.or{color:var(--mut);margin:14px 0;font-size:13px}
+.mode{display:flex;background:var(--card);border-radius:14px;padding:4px;margin-bottom:18px}
+.mode label{flex:1;padding:12px 6px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;color:var(--mut)}
+.mode input{display:none}
+.mode label:has(input:checked){background:var(--card2);color:var(--txt)}
+.mode small{display:block;font-weight:400;font-size:11px;opacity:.8;margin-top:2px}
+.err{color:#fca5a5;min-height:20px;font-size:14px;margin-top:6px}
+#call{position:fixed;inset:0;background:#05080f;display:none;flex-direction:column}
+#stage{flex:1;position:relative;overflow:hidden;display:grid;place-items:center}
+#remote{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:none}
+#local{position:absolute;right:12px;top:calc(12px + env(safe-area-inset-top));width:26vw;max-width:130px;aspect-ratio:3/4;object-fit:cover;border-radius:14px;border:2px solid #fff3;background:#111;transform:scaleX(-1);display:none;z-index:2}
+#voice{text-align:center;z-index:1;padding:0 20px}
+#voice .av{width:110px;height:110px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-size:52px;margin:0 auto 18px}
+#voice .av.live{animation:p 2s infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 #22c55e66}70%{box-shadow:0 0 0 22px #22c55e00}100%{box-shadow:0 0 0 0 #22c55e00}}
+@media(prefers-reduced-motion:reduce){#voice .av.live{animation:none}}
+#st{font-size:20px;font-weight:600}
+#code{font-size:34px;letter-spacing:.25em;font-weight:800;margin:6px 0}
+#tm{color:var(--mut);margin-top:6px;font-variant-numeric:tabular-nums}
+#share{display:none;gap:10px;margin-top:18px;justify-content:center}
+#share button{width:auto;min-height:48px;padding:0 20px;font-size:15px;margin:0;background:var(--card2);color:var(--txt)}
+#banner{position:absolute;left:12px;top:calc(12px + env(safe-area-inset-top));background:#f59e0b;color:#1a1100;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;z-index:3;display:none}
+#bar{display:flex;gap:14px;justify-content:center;padding:14px 12px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#05080fcc);z-index:3}
+#bar button{width:60px;min-height:60px;height:60px;border-radius:50%;margin:0;font-size:24px;padding:0;background:#ffffff22;color:#fff}
 #bar button.off{background:#fff;color:#000}
-#bar button.end{background:#ef4444;color:#fff}
-.err{color:#fca5a5;min-height:20px;font-size:14px;margin-top:8px}
+#bar button.end{background:var(--bad);color:#fff}
 </style>
 </head>
 <body>
 <div class="card" id="home">
-  <h1>📹 Chamada</h1>
-  <p>Vídeo e voz direto entre dois aparelhos.</p>
+  <div class="logo">📞</div>
+  <h1>Chamada</h1>
+  <p class="sub">Voz e vídeo direto entre dois aparelhos.<br>Sem cadastro. Leve.</p>
+  <div class="mode">
+    <label><input type="radio" name="m" value="voice" checked>🎧 Só voz<small>mais leve</small></label>
+    <label><input type="radio" name="m" value="video">📹 Vídeo<small>leve também</small></label>
+  </div>
   <button id="novo">Criar chamada</button>
   <div class="or">ou digite o código</div>
-  <input id="cod" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+  <input id="cod" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off" aria-label="Código da chamada">
   <button class="sec" id="entrar">Entrar</button>
-  <div class="err" id="err"></div>
+  <div class="err" id="err" role="alert"></div>
 </div>
 
 <div id="call">
-  <video id="remote" autoplay playsinline></video>
-  <video id="local" autoplay playsinline muted></video>
-  <div id="info"></div>
+  <div id="stage">
+    <video id="remote" autoplay playsinline></video>
+    <video id="local" autoplay playsinline muted></video>
+    <div id="banner">Reconectando…</div>
+    <div id="voice">
+      <div class="av" id="av">👤</div>
+      <div id="st">Aguardando…</div>
+      <div id="code"></div>
+      <div id="tm"></div>
+      <div id="share"><button id="bcopy">🔗 Copiar link</button><button id="bshare">📤 Enviar</button></div>
+    </div>
+  </div>
   <div id="bar">
-    <button id="bm" title="Microfone">🎤</button>
-    <button id="bc" title="Câmera">📷</button>
-    <button id="bf" title="Trocar câmera">🔄</button>
-    <button id="bp" title="Janela flutuante">⧉</button>
-    <button id="be" class="end" title="Encerrar">✕</button>
+    <button id="bm" title="Microfone" aria-label="Microfone">🎤</button>
+    <button id="bc" title="Ligar câmera" aria-label="Câmera">📷</button>
+    <button id="bs" title="Alto-falante" aria-label="Alto-falante">🔊</button>
+    <button id="bf" title="Trocar câmera" aria-label="Trocar câmera" style="display:none">🔄</button>
+    <button id="be" class="end" title="Encerrar" aria-label="Encerrar">✕</button>
   </div>
 </div>
+<audio id="aud" autoplay playsinline></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)};
 var PREFIX='vcall-x7-';
-var peer,call,stream,code,facing='user',wake=null,keep=null;
-var cfg={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}]}};
+var ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}],sdpSemantics:'unified-plan'}};
+var S={peer:null,call:null,data:null,stream:null,code:'',host:false,video:false,facing:'user',wake:null,keep:null,t0:0,timer:0,ending:false,retry:0,peerHidden:false,wantVideo:false,connected:false};
 
 function err(m){$('err').textContent=m||''}
-function show(inCall){$('home').style.display=inCall?'none':'block';$('call').style.display=inCall?'block':'none'}
+function show(c){$('home').style.display=c?'none':'block';$('call').style.display=c?'flex':'none'}
+function setSt(t){$('st').textContent=t}
+function rnd(){return String(Math.floor(1000+Math.random()*9000))}
 
-async function getMedia(){
-  if(stream)return stream;
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}
-  catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:false,audio:true})}catch(e2){throw new Error('Permita câmera e microfone para continuar.')}}
-  $('local').srcObject=stream;
-  return stream;
+/* ---------- mídia leve ---------- */
+async function media(video){
+  var a={echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1,sampleRate:16000};
+  var v=video?{facingMode:S.facing,width:{ideal:320,max:480},height:{ideal:240,max:360},frameRate:{ideal:15,max:15}}:false;
+  var s;
+  try{s=await navigator.mediaDevices.getUserMedia({audio:a,video:v})}
+  catch(e){
+    if(video){try{s=await navigator.mediaDevices.getUserMedia({audio:a,video:false});video=false}catch(e2){}}
+    if(!s)throw new Error('Permita o microfone para continuar.');
+  }
+  S.video=video&&s.getVideoTracks().length>0;
+  return s;
+}
+function tune(pc){
+  // limita taxa de bits: áudio 24 kbps, vídeo 150 kbps
+  try{pc.getSenders().forEach(function(s){
+    if(!s.track)return; var p=s.getParameters(); if(!p.encodings||!p.encodings.length)p.encodings=[{}];
+    p.encodings[0].maxBitrate=s.track.kind==='audio'?24000:150000;
+    if(s.track.kind==='video'){p.encodings[0].maxFramerate=15;p.degradationPreference='maintain-framerate'}
+    s.setParameters(p).catch(function(){});
+  })}catch(e){}
 }
 
-function attach(c){
-  call=c;
-  c.on('stream',function(r){
-    var v=$('remote');v.srcObject=r;v.play().catch(function(){});
-    $('info').innerHTML='Conectado'; setupBackground(r);
+/* ---------- chamada ---------- */
+async function iniciar(host){
+  err('');
+  var mode=document.querySelector('input[name=m]:checked').value;
+  var code=host?rnd():$('cod').value.trim();
+  if(!host&&!/^\d{4}$/.test(code))return err('Digite o código de 4 números.');
+  try{S.stream=await media(mode==='video')}catch(e){return err(e.message)}
+  S.canVideo=S.video;S.code=code;S.host=host;S.ending=false;S.retry=0;S.connected=false;
+  show(true);ui();startKeep();lock();
+  history.replaceState(null,'','/'+code);
+  host?registrar():discar();
+}
+function ui(){
+  $('code').textContent=S.code;
+  var hasV=S.stream&&S.stream.getVideoTracks().length>0;
+  $('local').style.display=hasV?'block':'none';
+  if(hasV)$('local').srcObject=S.stream;
+  $('bc').style.display=S.canVideo?'block':'none';
+  $('bc').classList.toggle('off',!hasV);
+  $('bf').style.display=hasV?'block':'none';
+}
+function registrar(){
+  killPeer();
+  setSt('Aguardando a outra pessoa…');$('share').style.display='flex';
+  var p=S.peer=new Peer(PREFIX+S.code,ICE);
+  p.on('error',function(e){
+    if(e.type==='unavailable-id'){ if(S.retry++<3){setTimeout(registrar,1500)}else{S.code=rnd();S.retry=0;history.replaceState(null,'','/'+S.code);ui();registrar()} }
+    else reconectar();
   });
-  c.on('close',end);
-  c.on('error',function(){end()});
+  p.on('disconnected',function(){try{p.reconnect()}catch(e){}});
+  p.on('call',function(c){ if(S.call){try{S.call.close()}catch(e){}} c.answer(S.stream); ligar(c); });
+  p.on('connection',function(d){bindData(d)});
+}
+function discar(){
+  killPeer();
+  setSt('Chamando…');
+  var p=S.peer=new Peer(ICE);
+  p.on('open',function(){
+    if(S.ending)return;
+    ligar(p.call(PREFIX+S.code,S.stream));
+    bindData(p.connect(PREFIX+S.code,{reliable:true}));
+  });
+  p.on('error',function(e){
+    if(e.type==='peer-unavailable'){ if(!S.connected&&S.retry===0){fim();err('Código não encontrado.');return} reconectar() }
+    else reconectar();
+  });
+  p.on('disconnected',function(){try{p.reconnect()}catch(e){}});
+}
+function ligar(c){
+  S.call=c;
+  c.on('stream',function(r){
+    S.connected=true;S.retry=0;
+    $('banner').style.display='none';
+    $('aud').srcObject=r; $('aud').play().catch(function(){});
+    var hasV=r.getVideoTracks().length>0;
+    var rv=$('remote'); rv.style.display=hasV?'block':'none'; if(hasV){rv.srcObject=r;rv.play().catch(function(){})}
+    $('voice').style.display=hasV?'none':'block';
+    $('av').classList.add('live');setSt('Conectado');$('share').style.display='none';
+    if(!S.t0)S.t0=Date.now(); if(!S.timer)S.timer=setInterval(tick,1000);
+    setTimeout(function(){tune(c.peerConnection)},800);
+    meta();
+    var pc=c.peerConnection;
+    pc.oniceconnectionstatechange=function(){
+      var s=pc.iceConnectionState;
+      if(s==='disconnected'||s==='failed'){ $('banner').style.display='block'; if(s==='failed')reconectar(); else setTimeout(function(){if(pc.iceConnectionState==='disconnected')reconectar()},4000) }
+      else if(s==='connected'||s==='completed'){ $('banner').style.display='none' }
+    };
+  });
+  c.on('close',function(){ if(!S.ending)reconectar() });
+  c.on('error',function(){ if(!S.ending)reconectar() });
+}
+function reconectar(){
+  if(S.ending||S._rc)return;
+  if(S.retry>=8){fim();err('Conexão perdida. Tente de novo.');return}
+  S._rc=1;S.retry++;
+  $('banner').style.display='block';
+  setTimeout(function(){S._rc=0;if(S.ending)return;S.host?registrar():discar()},Math.min(1000*S.retry,5000));
+}
+function killPeer(){
+  try{S.call&&S.call.close()}catch(e){}
+  try{S.peer&&S.peer.destroy()}catch(e){}
+  S.call=S.peer=S.data=null;
+}
+function fim(){
+  S.ending=true;killPeer();
+  if(S.stream){S.stream.getTracks().forEach(function(t){t.stop()});S.stream=null}
+  stopKeep();try{S.wake&&S.wake.release()}catch(e){} S.wake=null;
+  clearInterval(S.timer);S.timer=0;S.t0=0;$('tm').textContent='';
+  ['remote','local','aud'].forEach(function(i){$(i).srcObject=null});
+  $('av').classList.remove('live');$('banner').style.display='none';
+  history.replaceState(null,'','/');show(false);
+}
+function tick(){
+  var s=Math.floor((Date.now()-S.t0)/1000),m=Math.floor(s/60);
+  $('tm').textContent=(m<10?'0':'')+m+':'+(s%60<10?'0':'')+s%60;
 }
 
-async function criar(){
-  err('');
-  try{await getMedia()}catch(e){return err(e.message)}
-  code=String(Math.floor(1000+Math.random()*9000));
-  open(code,true);
+/* ---------- canal de dados (avisos entre os dois) ---------- */
+function bindData(d){
+  S.data=d;
+  d.on('data',function(m){
+    if(m&&m.t==='hid'){S.peerHidden=true;}     // o outro saiu da tela: ele já para de enviar vídeo
+    if(m&&m.t==='vis'){S.peerHidden=false;}
+  });
 }
-async function entrar(){
-  err('');
-  var c=$('cod').value.trim();
-  if(!/^\d{4}$/.test(c))return err('Digite o código de 4 números.');
-  try{await getMedia()}catch(e){return err(e.message)}
-  code=c; open(code,false);
-}
+function send(m){try{S.data&&S.data.open&&S.data.send(m)}catch(e){}}
+function meta(){ if(S.data&&S.data.open&&!document.hidden)return; }
 
-function open(c,host){
-  show(true);
-  $('info').innerHTML='Código<br><b>'+c+'</b><br>Aguardando a outra pessoa…';
-  history.replaceState(null,'','/'+c);
-  startKeepAlive(); lockScreen();
-  if(host){
-    peer=new Peer(PREFIX+c,cfg);
-    peer.on('error',function(e){
-      if(e.type==='unavailable-id'){peer.destroy();code=String(Math.floor(1000+Math.random()*9000));open(code,true)}
-      else $('info').textContent='Erro de conexão. Tente de novo.';
-    });
-    peer.on('call',function(inc){inc.answer(stream);attach(inc)});
-  }else{
-    peer=new Peer(cfg);
-    peer.on('open',function(){
-      $('info').textContent='Chamando '+c+'…';
-      attach(peer.call(PREFIX+c,stream));
-    });
-    peer.on('error',function(e){
-      if(e.type==='peer-unavailable'){end();err('Código não encontrado. Confira e tente de novo.')}
-      else $('info').textContent='Erro de conexão.';
-    });
-  }
-  peer.on('disconnected',function(){try{peer.reconnect()}catch(e){}});
-}
-
-function end(){
-  try{call&&call.close()}catch(e){}
-  try{peer&&peer.destroy()}catch(e){}
-  if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
-  stopKeepAlive(); try{wake&&wake.release()}catch(e){}
-  if(document.pictureInPictureElement)document.exitPictureInPicture().catch(function(){});
-  $('remote').srcObject=null; call=peer=null;
-  history.replaceState(null,'','/'); show(false);
-}
-
-/* ---- segundo plano ---- */
-function lockScreen(){
-  if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(w){wake=w}).catch(function(){});
-}
-// tom inaudível mantém o áudio ativo para o navegador não suspender a aba
-function startKeepAlive(){
+/* ---------- segundo plano / jogo ---------- */
+// Ao sair do site (ex.: abrir um jogo): corta só o VÍDEO (câmera e tela) e mantém a VOZ viva.
+function lock(){ if(S.video&&navigator.wakeLock)navigator.wakeLock.request('screen').then(function(w){S.wake=w}).catch(function(){}) }
+function startKeep(){
   try{
-    var AC=window.AudioContext||window.webkitAudioContext; var ctx=new AC();
-    var o=ctx.createOscillator(),g=ctx.createGain(); g.gain.value=0.0001;
-    o.connect(g);g.connect(ctx.destination);o.start(); keep={ctx:ctx,o:o};
+    var AC=window.AudioContext||window.webkitAudioContext;var ctx=new AC();
+    var o=ctx.createOscillator(),g=ctx.createGain();g.gain.value=0.00001;o.frequency.value=20;
+    o.connect(g);g.connect(ctx.destination);o.start();S.keep={ctx:ctx,o:o};
   }catch(e){}
-}
-function stopKeepAlive(){try{keep&&keep.o.stop();keep&&keep.ctx.close()}catch(e){} keep=null}
-function setupBackground(r){
   if('mediaSession' in navigator){
-    navigator.mediaSession.metadata=new MediaMetadata({title:'Chamada em andamento',artist:'Código '+code});
-    try{navigator.mediaSession.setActionHandler('hangup',end)}catch(e){}
+    navigator.mediaSession.metadata=new MediaMetadata({title:'Chamada em andamento',artist:'Toque para voltar'});
+    navigator.mediaSession.playbackState='playing';
+    try{navigator.mediaSession.setActionHandler('hangup',fim)}catch(e){}
     try{navigator.mediaSession.setActionHandler('togglemicrophone',toggleMic)}catch(e){}
+    ['play','pause'].forEach(function(a){try{navigator.mediaSession.setActionHandler(a,function(){$('aud').play().catch(function(){})})}catch(e){}});
   }
+}
+function stopKeep(){try{S.keep&&S.keep.o.stop();S.keep&&S.keep.ctx.close()}catch(e){}S.keep=null;
+  if('mediaSession' in navigator)navigator.mediaSession.playbackState='none'}
+function ressuscitar(){
+  if(S.keep&&S.keep.ctx.state!=='running')S.keep.ctx.resume().catch(function(){});
+  $('aud').play().catch(function(){});
+  if(S.stream)S.stream.getAudioTracks().forEach(function(t){ if(t.readyState==='ended'){ /* mic perdido: religa */ religarMic() } });
+}
+async function religarMic(){
+  try{
+    var n=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}});
+    var nt=n.getAudioTracks()[0],pc=S.call&&S.call.peerConnection;
+    var s=pc&&pc.getSenders().find(function(x){return x.track&&x.track.kind==='audio'});
+    if(s)await s.replaceTrack(nt);
+    S.stream.getAudioTracks().forEach(function(t){S.stream.removeTrack(t)});S.stream.addTrack(nt);
+  }catch(e){}
 }
 document.addEventListener('visibilitychange',function(){
-  if(!call)return;
+  if(!S.stream||S.ending)return;
+  var vt=S.stream.getVideoTracks()[0];
   if(document.hidden){
-    // ao sair do site, abre o vídeo flutuante e segue com a voz
-    var v=$('remote');
-    if(document.pictureInPictureEnabled&&!document.pictureInPictureElement&&v.srcObject)v.requestPictureInPicture().catch(function(){});
-    if(keep&&keep.ctx.state==='suspended')keep.ctx.resume();
+    if(vt){vt.enabled=false}                      // para de enviar vídeo = quase nada de CPU/bateria
+    var rv=$('remote');try{rv.pause()}catch(e){}
+    var rt=rv.srcObject&&rv.srcObject.getVideoTracks()[0]; if(rt)rt.enabled=false;
+    send({t:'hid'});
+    ressuscitar();
   }else{
-    lockScreen();
-    if(keep&&keep.ctx.state==='suspended')keep.ctx.resume();
-    if(document.pictureInPictureElement)document.exitPictureInPicture().catch(function(){});
-    $('remote').play().catch(function(){});
+    if(vt&&!S.camOff)vt.enabled=true;
+    var rv2=$('remote');var rt2=rv2.srcObject&&rv2.srcObject.getVideoTracks()[0]; if(rt2)rt2.enabled=true; rv2.play().catch(function(){});
+    send({t:'vis'});ressuscitar();lock();
+    if(S.call&&S.call.peerConnection&&/disconnected|failed|closed/.test(S.call.peerConnection.iceConnectionState))reconectar();
   }
 });
-if('mediaSession' in navigator){
-  try{navigator.mediaSession.setActionHandler('enterpictureinpicture',function(){$('remote').requestPictureInPicture().catch(function(){})})}catch(e){}
-}
+window.addEventListener('pagehide',function(e){ if(e.persisted)return; });
+setInterval(function(){ if(S.stream&&!S.ending&&document.hidden)ressuscitar() },5000);
+window.addEventListener('online',function(){ if(S.stream&&!S.ending){S.retry=0;reconectar()} });
 
-/* ---- botões ---- */
+/* ---------- botões ---------- */
 function toggleMic(){
-  if(!stream)return; var t=stream.getAudioTracks()[0]; if(!t)return;
-  t.enabled=!t.enabled; $('bm').classList.toggle('off',!t.enabled); $('bm').textContent=t.enabled?'🎤':'🔇';
+  var t=S.stream&&S.stream.getAudioTracks()[0];if(!t)return;
+  t.enabled=!t.enabled;$('bm').classList.toggle('off',!t.enabled);$('bm').textContent=t.enabled?'🎤':'🔇';
 }
 $('bm').onclick=toggleMic;
-$('bc').onclick=function(){
-  var t=stream&&stream.getVideoTracks()[0]; if(!t)return;
-  t.enabled=!t.enabled; $('bc').classList.toggle('off',!t.enabled);
+$('bs').onclick=function(){
+  var a=$('aud');a.muted=!a.muted;$('bs').classList.toggle('off',a.muted);$('bs').textContent=a.muted?'🔈':'🔊';
 };
-$('bf').onclick=async function(){
-  if(!stream)return;
-  facing=facing==='user'?'environment':'user';
+$('bc').onclick=async function(){
+  if(!S.stream)return;
+  var vt=S.stream.getVideoTracks()[0];
+  if(vt){ // desliga e libera a câmera de verdade
+    var pc=S.call&&S.call.peerConnection,s=pc&&pc.getSenders().find(function(x){return x.track&&x.track.kind==='video'});
+    if(s)await s.replaceTrack(null).catch(function(){});
+    vt.stop();S.stream.removeTrack(vt);S.camOff=true;S.video=false;ui();return;
+  }
   try{
-    var n=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing}});
-    var nt=n.getVideoTracks()[0], old=stream.getVideoTracks()[0];
-    var s=call&&call.peerConnection.getSenders().find(function(x){return x.track&&x.track.kind==='video'});
-    if(s)await s.replaceTrack(nt);
-    stream.removeTrack(old);old.stop();stream.addTrack(nt);$('local').srcObject=stream;
-    $('local').style.transform=facing==='user'?'scaleX(-1)':'none';
+    var n=await navigator.mediaDevices.getUserMedia({video:{facingMode:S.facing,width:{ideal:320,max:480},height:{ideal:240,max:360},frameRate:{ideal:15,max:15}}});
+    var nt=n.getVideoTracks()[0];S.stream.addTrack(nt);S.camOff=false;S.video=true;
+    var pc2=S.call&&S.call.peerConnection;
+    if(pc2){
+      var tr=pc2.getTransceivers().find(function(t){return t.receiver&&t.receiver.track&&t.receiver.track.kind==='video'});
+      if(tr&&tr.sender){await tr.sender.replaceTrack(nt);try{tr.direction='sendrecv'}catch(e){}}
+      else pc2.addTrack(nt,S.stream);
+      setTimeout(function(){tune(pc2)},500);
+    }
+    ui();lock();
   }catch(e){}
 };
-$('bp').onclick=function(){
-  var v=$('remote');
-  if(document.pictureInPictureElement)document.exitPictureInPicture();
-  else if(v.requestPictureInPicture)v.requestPictureInPicture().catch(function(){});
+$('bf').onclick=async function(){
+  var old=S.stream&&S.stream.getVideoTracks()[0];if(!old)return;
+  S.facing=S.facing==='user'?'environment':'user';
+  try{
+    var n=await navigator.mediaDevices.getUserMedia({video:{facingMode:S.facing,width:{ideal:320,max:480},height:{ideal:240,max:360},frameRate:{ideal:15,max:15}}});
+    var nt=n.getVideoTracks()[0];
+    var s=S.call&&S.call.peerConnection.getSenders().find(function(x){return x.track&&x.track.kind==='video'});
+    if(s)await s.replaceTrack(nt);
+    S.stream.removeTrack(old);old.stop();S.stream.addTrack(nt);$('local').srcObject=S.stream;
+    $('local').style.transform=S.facing==='user'?'scaleX(-1)':'none';
+  }catch(e){}
 };
-$('be').onclick=end;
-$('novo').onclick=criar;
-$('entrar').onclick=entrar;
-$('cod').addEventListener('keydown',function(e){if(e.key==='Enter')entrar()});
+$('be').onclick=fim;
+$('novo').onclick=function(){iniciar(true)};
+$('entrar').onclick=function(){iniciar(false)};
+$('cod').addEventListener('keydown',function(e){if(e.key==='Enter')iniciar(false)});
 $('cod').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'')});
-
-// link curto: /1234 já preenche o código
+function link(){return location.origin+'/'+S.code}
+$('bcopy').onclick=function(){
+  var b=this;(navigator.clipboard?navigator.clipboard.writeText(link()):Promise.reject()).then(function(){b.textContent='✓ Copiado'}).catch(function(){prompt('Copie o link:',link())});
+  setTimeout(function(){b.textContent='🔗 Copiar link'},1800);
+};
+$('bshare').onclick=function(){
+  if(navigator.share)navigator.share({title:'Chamada',text:'Entre na chamada: código '+S.code,url:link()}).catch(function(){});
+  else $('bcopy').click();
+};
+// link curto /1234 já preenche o código
 var m=location.pathname.match(/^\/(\d{4})$/)||location.hash.match(/^#(\d{4})$/);
-if(m){$('cod').value=m[1]}
+if(m){$('cod').value=m[1];$('entrar').focus()}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
 })();
 </script>
